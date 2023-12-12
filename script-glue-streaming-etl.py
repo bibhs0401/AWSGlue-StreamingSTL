@@ -28,11 +28,11 @@ job.init(args['JOB_NAME'], args)
 
 # Read parameters
 checkpoint_location = args['checkpoint_location']
-aws_region = args['aws_region']
+aws_region = args['us-west-2']
 
 # DynamoDB config
-dynamodb_sink_table = args['dynamodb_sink_table']
-dynamodb_static_table = args['dynamodb_static_table']
+dynamodb_sink_table = args['bibhusha-dynamodb_sink_table']
+dynamodb_static_table = args['bibhusha-dynamodb_static_table']
 
 def write_to_dynamodb(row):
     '''
