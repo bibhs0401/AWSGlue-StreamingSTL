@@ -31,8 +31,8 @@ checkpoint_location = args['checkpoint_location']
 aws_region = args['us-west-2']
 
 # DynamoDB config
-dynamodb_sink_table = args['bibhusha-dynamodb_sink_table']
-dynamodb_static_table = args['bibhusha-dynamodb_static_table']
+dynamodb_sink_table = args['dynamodb_sink_table']
+dynamodb_static_table = args['dynamodb_static_table']
 
 def write_to_dynamodb(row):
     '''
@@ -45,7 +45,7 @@ def write_to_dynamodb(row):
       Item = { 'userid': row['userid'], \
                 'channelid':row['channelid'], \
                 'genre': str(row['genre']), \
-                'lastactive': str(row['genre']), \
+                'lastactive': str(row['lastactive']), \
                 'title': str(row['title']), \
                 'watchfrequency': row['watchfrequency'], \
                 'etags': row['etags'] })
@@ -63,49 +63,31 @@ dynamodb_dynamic_frame = glueContext.create_dynamic_frame.from_options( \
 dynamodb_lookup_df = dynamodb_dynamic_frame.toDF().cache()
 
 # Read from Kinesis Data Stream
-streaming_data = spark.readStream \
+netflix_data = spark.readStream \
                     .format("kinesis") \
                     .option("streamName","bibhusha-demo-datastream") \
                     .option("endpointUrl", "https://kinesis.us-west-2.amazonaws.com") \
                     .option("startingPosition", "TRIM_HORIZON") \
                     .load()
 
-# Retrieve Sensor columns and simple projection
-netflix_data = streaming_data \
-    .select(from_json(col("data") \
-    .cast("string"),glueContext.get_catalog_schema_as_spark_schema("bibhushadb","bibhusha-demotable")) \
-    .alias("netflixdata")) \
-    .select("netflixdata.*") \
-    .withColumn("lastactive", to_timestamp(col('lastactive'), "yyyy-MM-dd HH:mm:ss")) \
-    .withColumn("lastactive", to_timestamp(current_timestamp(), "yyyy-MM-dd HH:mm:ss"))
 
-# # Stream static join, ETL to augment with favorite
-netflix_joined_df = netflix_data.join(dynamodb_lookup_df, "userid") \
-    .withColumn('impression', when( \
+# Stream static join, ETL to augment with favorite
+netflix_df = netflix_data.withColumn('impression', when( \
     ((netflix_data.watchfrequency < 3)), "neutral") \
-    .when( \
-    ((netflix_data.watchfrequency >= 3) |
+    .when(((netflix_data.watchfrequency >= 3) |
     (netflix_data.watchfrequency <= 10)), "like") \
     .otherwise("favorite"))
 
 
-netflix_joined_df.printSchema()
+netflix_df.printSchema()
 
 # Drop some values
-netflix_transformed_df = netflix_joined_df \
-                            .drop('etags')
+netflix_transformed_df = netflix_df.drop('etags')
 
 netflix_transformed_df.printSchema()
 
-netflix_df = netflix_transformed_df \
-    .groupBy(window(col('lastactive'), '10 minute', '5 minute'), \
-    netflix_transformed_df.impression, netflix_transformed_df.userid)
-    
-
-netflix_df.printSchema()
-
 # Write to DynamoDB sink
-netflix_query = netflix_df \
+netflix_query = netflix_transformed_df \
     .writeStream \
     .foreach(write_to_dynamodb) \
     .outputMode("update") \
