@@ -36,11 +36,10 @@ dynamodb_static_table = args['dynamodb_static_table']
 
 def write_to_dynamodb(row):
     # Add row to DynamoDB.
-    
     dynamodb = boto3.resource('dynamodb', region_name=aws_region)
     dynamodb.Table(dynamodb_sink_table).put_item(
         Item = { 'userid': row['userid'], \
-                'channelid': row['status'], \
+                'channelid': row['channelid '], \
                 'genre': str(row['title']), \
                 'lastactive': str(row['title']), \
                 'title': str(row['title']), \
