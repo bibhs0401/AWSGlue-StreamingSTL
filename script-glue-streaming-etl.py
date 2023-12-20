@@ -40,8 +40,8 @@ def write_to_dynamodb(row):
     dynamodb.Table(dynamodb_sink_table).put_item(
         Item = { 'userid': row['userid'], \
                 'channelid': row['channelid '], \
-                'genre': str(row['title']), \
-                'lastactive': str(row['title']), \
+                'genre': str(row['genre']), \
+                'lastactive': str(row['lastactive']), \
                 'title': str(row['title']), \
                 'watchfrequency': row['watchfrequency'], \
                 'etags': row['etags']})
