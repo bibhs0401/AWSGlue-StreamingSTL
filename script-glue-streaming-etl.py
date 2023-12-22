@@ -17,8 +17,7 @@ args = getResolvedOptions(sys.argv, \
                             ['JOB_NAME', \
                             'aws_region', \
                             'checkpoint_location', \
-                            'dynamodb_sink_table', \
-                            'dynamodb_static_table'])
+                            'dynamodb_sink_table'])
 
 sc = SparkContext()
 glueContext = GlueContext(sc)
@@ -32,7 +31,7 @@ aws_region = args['aws_region']
 
 # DynamoDB config
 dynamodb_sink_table = args['dynamodb_sink_table']
-dynamodb_static_table = args['dynamodb_static_table']
+# dynamodb_static_table = args['dynamodb_static_table']
 
 def write_to_dynamodb(row):
     # Add row to DynamoDB.
